@@ -16,7 +16,7 @@ export class Grid {
 
   cells: (null | Creature)[][];
 
-
+  object3D: any;
 
   constructor(widthPx: number, heightPx: number, cellSize = SIM_CELL_PX) {
 
@@ -31,7 +31,6 @@ export class Grid {
       Array(this.rows).fill(null)
 
     );
-
   }
 
 

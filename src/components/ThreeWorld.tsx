@@ -171,32 +171,47 @@ export default function ThreeWorld() {
 
     let lastTick = performance.now();
 
+    let rafId = 0;
+
     function animate(now: number) {
-      requestAnimationFrame(animate);
-
-      // step simulation at each TICK_MS
-
       if (now - lastTick >= TICK_MS) {
         sim.step();
-
         lastTick = now;
       }
-
       if (cameraRef.current) renderer.render(scene, cameraRef.current);
+      rafId = requestAnimationFrame(animate);
     }
 
-    requestAnimationFrame(animate);
-
-    // cleanup on unmount
+    rafId = requestAnimationFrame(animate);
 
     return () => {
       window.removeEventListener("resize", onResize);
+      cancelAnimationFrame(rafId); // stop the loop
+
+      // dispose entity meshes
+      while (entityLayer.children.length) {
+        const ch = entityLayer.children[0] as THREE.Mesh;
+        if (ch.geometry) ch.geometry.dispose();
+        const mat = ch.material as THREE.Material | THREE.Material[];
+        if (Array.isArray(mat)) mat.forEach(m => m.dispose());
+        else if (mat) mat.dispose();
+        entityLayer.remove(ch);
+      }
+
+      // dispose grid lines
+      if (gridLines) {
+        if (gridLines.geometry) gridLines.geometry.dispose();
+        const gm = gridLines.material as THREE.Material | THREE.Material[];
+        if (Array.isArray(gm)) gm.forEach(m => m.dispose());
+        else if (gm) gm.dispose();
+        if (gridLines.parent) gridLines.parent.remove(gridLines);
+      }
 
       if (renderer.domElement && renderer.domElement.parentNode)
         renderer.domElement.parentNode.removeChild(renderer.domElement);
-
       renderer.dispose();
     };
+
   }, []);
 
   return (

@@ -1,6 +1,8 @@
 import * as THREE from "three";
-
 import type { Grid } from "./Grid";
+import { PLANT_GEOM, PLANT_MAT, ANIMAL_GEOM, ANIMAL_MAT } from './constants.ts';
+
+
 
 
 
@@ -15,7 +17,6 @@ export abstract class Creature {
   grid: Grid;
 
   type: "plant" | "animal";
-
 
 
   constructor(
@@ -41,10 +42,9 @@ export abstract class Creature {
     this.type = type;
 
 
-
-    const geom = new THREE.PlaneGeometry(grid.cellSize, grid.cellSize);
-
-    const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+    const isPlant = this.type === "plant";
+    const geom = isPlant ? PLANT_GEOM : ANIMAL_GEOM;
+    const mat = isPlant ? PLANT_MAT : ANIMAL_MAT;
 
     this.mesh = new THREE.Mesh(geom, mat);
 
@@ -67,9 +67,11 @@ export abstract class Creature {
 
 
   removeFromScene() {
-
     if (this.mesh.parent) this.mesh.parent.remove(this.mesh);
-
+    if (this.mesh.geometry) this.mesh.geometry.dispose();
+    const mat = this.mesh.material as THREE.Material | THREE.Material[];
+    if (Array.isArray(mat)) mat.forEach(m => m.dispose());
+    else if (mat) mat.dispose();
   }
-
+  
 }

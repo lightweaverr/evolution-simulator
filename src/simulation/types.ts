@@ -9,4 +9,4 @@ export interface Vec2 {
 
  
 
-export const SIM_CELL_PX = 10;
+export const SIM_CELL_PX = 5;
