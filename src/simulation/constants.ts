@@ -5,7 +5,7 @@ export const CELL_SIZE = 10; // or import from elsewhere
 
 export const HEALTH_UNIT = 30;
 
-export const PLANT_SPAWN_RATE = 0.001;
+export const PLANT_SPAWN_RATE = 0.01;
 
 export const PLANT_GEOM = new THREE.PlaneGeometry(CELL_SIZE, CELL_SIZE);
 export const PLANT_MAT = new THREE.MeshBasicMaterial({ color: 0x6b8e23 }); // olive green

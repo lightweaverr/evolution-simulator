@@ -1,8 +1,20 @@
 import { useEffect, useRef } from "react";
 
 import * as THREE from "three";
+import { GUI } from "lil-gui";
 
 import { Simulation } from "../simulation/Simulation";
+
+// Extend Performance interface for memory API
+declare global {
+  interface Performance {
+    memory?: {
+      usedJSHeapSize: number;
+      totalJSHeapSize: number;
+      jsHeapSizeLimit: number;
+    };
+  }
+}
 
 export default function ThreeWorld() {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -13,7 +25,8 @@ export default function ThreeWorld() {
 
   const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
 
-  const simulationRef = useRef<any>(null);
+    const simulationRef = useRef<any>(null);
+    const guiRef = useRef<GUI | null>(null);
 
   useEffect(() => {
     const container = containerRef.current!;
@@ -137,6 +150,32 @@ export default function ThreeWorld() {
 
     buildGridLines(sim.grid);
 
+    // Setup GUI for statistics
+    const gui = new GUI({ title: "Simulation Stats" });
+    guiRef.current = gui;
+    
+    // Position GUI in top right
+    gui.domElement.style.position = "absolute";
+    gui.domElement.style.top = "10px";
+    gui.domElement.style.right = "10px";
+    gui.domElement.style.zIndex = "1000";
+    
+    // Statistics object that will be updated
+    const stats = {
+      animalCount: 0,
+      plantCount: 0,
+      fps: 0,
+      memoryUsage: "0 MB",
+      tick: 0
+    };
+    
+    // Add controls to GUI
+    gui.add(stats, "animalCount").name("Animals").listen();
+    gui.add(stats, "plantCount").name("Plants").listen();
+    gui.add(stats, "fps").name("FPS").listen();
+    gui.add(stats, "memoryUsage").name("Memory").listen();
+    gui.add(stats, "tick").name("Tick").listen();
+
     // sizing
 
     function onResize() {
@@ -170,10 +209,32 @@ export default function ThreeWorld() {
     const TICK_MS = 200; // tick duration in ms (simulation steps)
 
     let lastTick = performance.now();
+    let lastFpsUpdate = performance.now();
+    let frameCount = 0;
 
     let rafId = 0;
 
     function animate(now: number) {
+      frameCount++;
+      
+      // Update FPS every second
+      if (now - lastFpsUpdate >= 1000) {
+        stats.fps = Math.round((frameCount * 1000) / (now - lastFpsUpdate));
+        frameCount = 0;
+        lastFpsUpdate = now;
+      }
+      
+      // Update statistics
+      stats.animalCount = sim.animals.length;
+      stats.plantCount = sim.plants.length;
+      stats.tick = sim.tick;
+      
+      // Update memory usage
+      if (performance.memory) {
+        const memoryMB = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
+        stats.memoryUsage = `${memoryMB} MB`;
+      }
+      
       if (now - lastTick >= TICK_MS) {
         sim.step();
         lastTick = now;
@@ -187,6 +248,12 @@ export default function ThreeWorld() {
     return () => {
       window.removeEventListener("resize", onResize);
       cancelAnimationFrame(rafId); // stop the loop
+      
+      // Cleanup GUI
+      if (guiRef.current) {
+        guiRef.current.destroy();
+        guiRef.current = null;
+      }
 
       // dispose entity meshes
       while (entityLayer.children.length) {
